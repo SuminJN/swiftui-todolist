@@ -32,6 +32,7 @@ struct TodoView: View {
                     Toggle("", isOn: $todoItems[index].completed)
                         .toggleStyle(CheckBoxToggleStyle())
                     Text(todoItems[index].title)
+                        .strikethrough(todoItems[index].completed)
                         .padding(.init(top: 0, leading: 20, bottom: 0, trailing: 0))
                 }
             }
