@@ -9,6 +9,12 @@ struct TodoView: View {
     
     @State var newTodoItemTitle = ""
     
+    @State private var enableDelete = true
+    
+    func delete(at offsets: IndexSet) {
+        todoItems.remove(atOffsets: offsets)
+    }
+    
     var body: some View {
         VStack {
             Text("To Do List").font(.largeTitle)
@@ -27,14 +33,17 @@ struct TodoView: View {
             .border(Color.black)
             .padding(.init(top: 0, leading: 20, bottom: 10, trailing:20))
             
-            List(todoItems.indices, id: \.self) { index in
-                HStack {
-                    Toggle("", isOn: $todoItems[index].completed)
-                        .toggleStyle(CheckBoxToggleStyle())
-                    Text(todoItems[index].title)
-                        .strikethrough(todoItems[index].completed)
-                        .padding(.init(top: 0, leading: 20, bottom: 0, trailing: 0))
+            List {
+                ForEach(todoItems.indices, id: \.self) { index in
+                    HStack {
+                        Toggle("", isOn: $todoItems[index].completed)
+                            .toggleStyle(CheckBoxToggleStyle())
+                        Text(todoItems[index].title)
+                            .strikethrough(todoItems[index].completed)
+                            .padding(.init(top: 0, leading: 20, bottom: 0, trailing: 0))
+                    }
                 }
+                .onDelete(perform: enableDelete ? delete: nil)
             }
         }
     }
