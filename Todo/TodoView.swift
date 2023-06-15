@@ -1,63 +1,80 @@
 import SwiftUI
 
 struct TodoView: View {
-    @State var todoItems: [TodoItem] = [
-        TodoItem(title: "Go shopping", completed: false),
-        TodoItem(title: "Take photos", completed: false),
-        TodoItem(title: "Do the laundry", completed: true)
-    ]
+    @Environment(\.managedObjectContext) private var viewContext
     
-    @State var newTodoItemTitle = ""
+    @State private var title: String = ""
+    @State private var completed: Bool = false
     
-    @State private var enableDelete = true
+    @FetchRequest(entity: TodoItem.entity(), sortDescriptors: [NSSortDescriptor(key: "id", ascending: false)]) private var todoItems: FetchedResults<TodoItem>
     
-    func delete(at offsets: IndexSet) {
-        todoItems.remove(atOffsets: offsets)
+    private func saveTodoItem() {
+        
+        do {
+            let todoItem = TodoItem(context: viewContext)
+            todoItem.title = title
+            todoItem.completed = completed
+            todoItem.id = UUID()
+            try viewContext.save()
+        } catch {
+            print(error.localizedDescription)
+        }
+    }
+    
+    private func updateTodoItem(_ item: TodoItem) {
+        item.completed = !item.completed
+        
+        do {
+            try viewContext.save()
+        } catch {
+            print(error.localizedDescription)
+        }
+    }
+    
+    private func deleteTodoItem(at offsets: IndexSet) {
+        offsets.forEach { index in
+            let item = todoItems[index]
+            viewContext.delete(item)
+        }
+        
+        do {
+            try viewContext.save()
+        } catch {
+            print(error.localizedDescription)
+        }
     }
     
     var body: some View {
         VStack {
             Text("To Do List").font(.largeTitle)
+            
             HStack {
-                TextField("New thing to do", text: $newTodoItemTitle)
+                TextField("New thing to do", text: $title)
                 Button {
-                    let newItem = TodoItem(title: newTodoItemTitle, completed: false)
-                    todoItems.insert(newItem, at: 0)
-                    newTodoItemTitle = ""
+                    saveTodoItem()
                 } label: {
                     Text("Add")
                 }
-                .disabled(newTodoItemTitle.isEmpty)
+                .disabled(title.isEmpty)
             }
             .padding()
-            .border(Color.black)
+            .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.black, lineWidth: 1))
             .padding(.init(top: 0, leading: 20, bottom: 10, trailing:20))
-            
             List {
-                ForEach(todoItems.indices, id: \.self) { index in
+                ForEach(todoItems, id: \.self) { item in
                     HStack {
-                        Toggle("", isOn: $todoItems[index].completed)
-                            .toggleStyle(CheckBoxToggleStyle())
-                        Text(todoItems[index].title)
-                            .strikethrough(todoItems[index].completed)
-                            .padding(.init(top: 0, leading: 20, bottom: 0, trailing: 0))
+                        Image(systemName: item.completed ? "checkmark.square" : "square" )
+                            .resizable()
+                            .frame(width: 22, height: 22)
+                            .onTapGesture {
+                                updateTodoItem(item)
+                            }
+                        Text(item.title ?? "")
+                            .strikethrough(item.completed)
                     }
                 }
-                .onDelete(perform: enableDelete ? delete: nil)
+                .onDelete(perform: deleteTodoItem)
             }
-        }
-    }
-}
-
-struct CheckBoxToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        return HStack {
-            Image(systemName: configuration.isOn ? "checkmark.square" : "square")
-                .resizable()
-                .frame(width: 22, height: 22)
-                .onTapGesture {
-                    configuration.isOn.toggle()
-                }
         }
     }
 }
