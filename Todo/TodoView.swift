@@ -81,6 +81,7 @@ struct TodoView: View {
 
 struct TodoView_Previews: PreviewProvider {
     static var previews: some View {
-        TodoView()
+        let persistedContainer = CoreDataManager.shared.persistentContainer
+        TodoView().environment(\.managedObjectContext, persistedContainer.viewContext)
     }
 }
